@@ -1,682 +1,435 @@
-# ATLAS BANK
-### Secure Financial Network Infrastructure
 
-<p align="center">
-  <img src="https://img.shields.io/badge/PROJECT-ENTERPRISE%20NETWORK-102A43?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/SECURITY-DEFENSE%20IN%20DEPTH-087F5B?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/STATUS-PHASE%2001-D4A94D?style=for-the-badge" />
-</p>
 
-<p align="center">
-  <strong>Designing and securing a multi-site banking infrastructure through network segmentation, centralized identity management, secure routing, and perimeter defense.</strong>
-</p>
+# OXA BANK
+### Enterprise Banking Network Infrastructure
 
----
+**A multi-floor, segmented and redundant headquarters network built in Cisco Packet Tracer 9.0.1**
 
-## 01. PROJECT OVERVIEW
+![Cisco Packet Tracer](https://img.shields.io/badge/Cisco-Packet%20Tracer%209.0.1-1BA0D7?logo=cisco&logoColor=white)
+![Routing](https://img.shields.io/badge/Routing-RIPv2-2563EB)
+![Redundancy](https://img.shields.io/badge/High%20Availability-HSRP-0D9488)
+![Security](https://img.shields.io/badge/Security-ACL%20%7C%20NAT%20%7C%20SSH-16A34A)
+![Status](https://img.shields.io/badge/Type-Lab%20%2F%20Portfolio-orange)
 
-**Atlas Bank** is an enterprise-grade network infrastructure project simulating the IT environment of a modern financial institution.
-
-The organization operates across three geographical locations:
-
-- **Headquarters (HQ):** Centralized data center, banking servers, identity infrastructure, administration, and Internet connectivity.
-- **Casablanca Branch (BR1):** Banking operations, teller workstations, and ATM infrastructure.
-- **Rabat Branch (BR2):** Banking operations, teller workstations, and ATM infrastructure.
-
-The infrastructure is designed around a defense-in-depth security model, where network segmentation, routing authentication, access control, perimeter inspection, and centralized identity management work together.
-
-The implementation combines Cisco Packet Tracer with a real Windows Server 2019 virtual machine and a Windows 10 Pro domain client.
-
-### Project Mission
-
-Build a banking network in which every system, user, and service operates within an explicitly defined security boundary.
-
-> A banking network must not simply provide connectivity. It must enforce trust.
+</div>
 
 ---
 
-## 02. INFRASTRUCTURE AT A GLANCE
+## 01 · Project Overview
 
-| Component | Implementation |
-|---|---|
-| Network simulator | Cisco Packet Tracer |
-| Core switching | Cisco Catalyst 3650 |
-| Access switching | Cisco Catalyst 2960 |
-| Routing | Cisco 2911 |
-| Perimeter firewall | Cisco ASA 5506-X |
-| Routing protocol | OSPF Multi-Area |
-| Routing authentication | OSPF MD5 |
-| Switching redundancy | LACP EtherChannel |
-| Spanning Tree | Rapid-PVST+ |
-| Identity management | Windows Server 2019 |
-| Directory services | Active Directory Domain Services |
-| DNS | Windows DNS |
-| DHCP | Windows DHCP |
-| Endpoint | Windows 10 Pro |
-| File services | SMB / NTFS |
-| Virtualization | VMware |
+**OXA BANK** is a simulated enterprise banking headquarters network designed to demonstrate practical routing, switching, network segmentation, redundancy and security controls.
 
-### Network Capabilities
+The topology represents four office floors split into two distribution blocks. Each block is built around a pair of multilayer switches, with dedicated access switches for departments and service zones. A routed core connects both blocks to an edge router and an ISP simulation.
 
-- Three-site enterprise topology.
-- Centralized Internet breakout.
-- Dedicated DMZ for the online banking portal.
-- Departmental and infrastructure VLAN segmentation.
-- Dynamic inter-site routing.
-- Authenticated OSPF adjacencies.
-- Centralized identity and addressing.
-- Extended ACL-based traffic restrictions.
-- Layer 2 attack mitigation.
-- Secure administrative access.
-- Windows Group Policy enforcement.
+### Design objectives
 
----
+- Segment departments and sensitive banking services into dedicated VLANs.
+- Provide redundant default gateways using HSRP.
+- Prevent Layer 2 loops with Rapid-PVST+.
+- Exchange internal routes using RIPv2.
+- Centralize DHCP and DNS services.
+- Restrict traffic to Guest, ATM, Backup and DMZ zones using ACLs.
+- Provide simulated Internet access using NAT overload (PAT).
+- Harden access ports and restrict network-device management.
 
-## 03. NETWORK ARCHITECTURE
+> **Project scope:** Educational Packet Tracer simulation. This is not a certified or production-ready banking architecture.
 
-### High-Level Topology
+## 02 · Network Topology
 
-The infrastructure follows a hierarchical architecture consisting of access, core, WAN, and perimeter layers.
+The diagram below summarizes the logical design and the main connections defined in the device configurations.
 
-```mermaid
-flowchart TB
-    INTERNET["INTERNET<br/>Internet-SRV"]
-    ISP["ISP-R<br/>Cisco 2911"]
-    FW["HQ-FW<br/>ASA 5506-X"]
+![OXA BANK logical network topology](docs/topology.png)
 
-    subgraph DMZ["DMZ SECURITY ZONE"]
-        DSW["DMZ-SW"]
-        WEB["DMZ-WEB<br/>Online Banking Portal"]
-        DSW --- WEB
-    end
+### Topology at a glance
 
-    subgraph HQ["HEADQUARTERS"]
-        CORE["HQ-CORE<br/>Catalyst 3650"]
-        WAN["HQ-WAN-R<br/>OSPF ABR"]
-
-        subgraph DC["DATA CENTER"]
-            SSW["SW-SRV"]
-            DC1["DC1<br/>Windows Server 2019"]
-            BANK["SRV-CORE<br/>Core Banking"]
-            ATM["SRV-ATM<br/>ATM Switching"]
-            SSW --- DC1
-            SSW --- BANK
-            SSW --- ATM
-        end
-
-        subgraph USERS["HQ OFFICE"]
-            ACC["SW-HQ-ACC"]
-            STAFF["STAFF"]
-            ADMIN["IT ADMIN"]
-            GUEST["GUEST"]
-            ACC --- STAFF
-            ACC --- ADMIN
-            ACC --- GUEST
-        end
-
-        CORE ---|"LACP Po1"| SSW
-        CORE ---|"LACP Po2"| ACC
-        CORE --- WAN
-    end
-
-    subgraph BR1["CASABLANCA · AREA 1"]
-        R1["BR1-R"]
-        S1["BR1-SW"]
-        P1["Staff / ATM"]
-        R1 --- S1
-        S1 --- P1
-    end
-
-    subgraph BR2["RABAT · AREA 2"]
-        R2["BR2-R"]
-        S2["BR2-SW"]
-        P2["Staff / ATM"]
-        R2 --- S2
-        S2 --- P2
-    end
-
-    INTERNET --- ISP
-    ISP --- FW
-    FW --- CORE
-    FW --- DSW
-    WAN --- R1
-    WAN --- R2
-
-    classDef security fill:#143B36,stroke:#37B58A,color:#FFFFFF
-    classDef infrastructure fill:#17324D,stroke:#4D90C6,color:#FFFFFF
-    classDef endpoint fill:#29394A,stroke:#7892A8,color:#FFFFFF
-    classDef perimeter fill:#4A3520,stroke:#D4A94D,color:#FFFFFF
-
-    class FW,WEB security
-    class CORE,WAN,SSW,ACC,R1,R2,S1,S2,DSW infrastructure
-    class DC1,BANK,ATM,STAFF,ADMIN,GUEST,P1,P2 endpoint
-    class ISP,INTERNET perimeter
-```
-
-### Architectural Principles
-
-| Layer | Responsibility |
-|---|---|
-| Access | Endpoint connectivity and VLAN assignment |
-| Core | Inter-VLAN routing, ACLs, and DHCP relay |
-| WAN | Multi-area OSPF and branch connectivity |
-| Perimeter | Stateful inspection, NAT, and DMZ isolation |
-| Identity | Centralized authentication and policy |
-| Endpoint | Domain security and operating system controls |
-
----
-
-## 04. MULTI-SITE ROUTING DESIGN
-
-The network uses OSPF with a multi-area architecture.
-
-| Area | Location | Router |
+| Segment | Devices | Responsibility |
 |---|---|---|
-| Area 0 | HQ backbone | HQ-CORE / HQ-WAN-R |
-| Area 1 | Casablanca | BR1-R |
-| Area 2 | Rabat | BR2-R |
+| Floor 1 | SW-MGMT, SW-FIN, SW-HR, SW-CUST | Management, Finance, HR, Customer Services |
+| Floor 2 | SW-IT, SW-ACC, SW-BOPS, SW-ADM | IT, Accounting, Bank Operations, Admin |
+| Left distribution | MLS1, MLS2 | Inter-VLAN routing, HSRP, STP |
+| Floor 3 | SW-LOANS, SW-BKP, SW-SEC, SW-ATM | Loans, Backup, Security, ATM |
+| Floor 4 | SW-VOICE, SW-GUEST, SW-DMZ, SW-SRV | Voice, Guest, DMZ, DNS/DHCP |
+| Right distribution | MLS3, MLS4 | Inter-VLAN routing, HSRP, STP |
+| Routed core | R1, R2, R3, R4 | Internal routed connectivity |
+| Perimeter | R5 + ISP | NAT/PAT, outside filtering, ISP simulation |
 
-HQ-WAN-R acts as the Area Border Router (ABR), connecting the backbone to both branch areas.
+**Physical design notes**
 
-### Routing Security
+- Each access switch has two 802.1Q trunk uplinks: one to each multilayer switch in its block.
+- Routed `/30` links connect the routers and distribution switches as shown in the device configurations.
+- The four internal routers form a serial ring: R1–R2–R3–R4–R1.
+- R3 and R4 connect to R5; R5 connects to the ISP over Gigabit Ethernet.
+- The optional LACP EtherChannel between MLS1–MLS2 and MLS3–MLS4 requires additional physical links and is commented out in the base configuration.
 
-- OSPF process 1.
-- Static router IDs using loopbacks.
-- Point-to-point WAN links.
-- MD5 message-digest authentication.
-- Passive interfaces on non-routing segments.
-- Default route propagation from HQ.
+## 03 · VLAN & IP Addressing Plan
 
-### Point-to-Point Addressing
+Each department or service zone has a dedicated `/24` subnet. The HSRP virtual gateway is `.1`; the two multilayer switches use `.2` and `.3`.
 
-| Link | Network | Side A | Side B |
-|---|---|---|---|
-| HQ-CORE ↔ HQ-WAN-R | 10.255.0.4/30 | .6 | .5 |
-| HQ-WAN-R ↔ BR1-R | 10.255.1.0/30 | .1 | .2 |
-| HQ-WAN-R ↔ BR2-R | 10.255.2.0/30 | .1 | .2 |
+### Left block · Corporate departments
 
-**OSPF Authentication Key:** `Atl@s0spf`
-
----
-
-## 05. VLAN & SECURITY ZONES
-
-Each VLAN represents a separate trust zone.
-
-| VLAN | Zone | Headquarters | Casablanca | Rabat |
+| VLAN | Name | Subnet | Virtual gateway | HSRP Active |
 |---:|---|---|---|---|
-| 10 | SRV-INFRA | 10.10.10.0/24 | — | — |
-| 20 | SRV-COREBANK | 10.10.20.0/24 | — | — |
-| 30 | STAFF | 10.10.30.0/24 | 10.20.30.0/24 | 10.30.30.0/24 |
-| 40 | IT-ADMIN | 10.10.40.0/24 | — | — |
-| 50 | MGMT | 10.10.50.0/24 | 10.20.50.0/24 | 10.30.50.0/24 |
-| 60 | GUEST | 10.10.60.0/24 | — | — |
-| 70 | ATM | — | 10.20.70.0/24 | 10.30.70.0/24 |
-| 99 | NATIVE | Native VLAN | Native VLAN | Native VLAN |
-| 999 | BLACKHOLE | Unused ports | Unused ports | Unused ports |
+| 10 | MANAGEMENT | `10.10.10.0/24` | `10.10.10.1` | MLS1 |
+| 20 | FINANCE | `10.10.20.0/24` | `10.10.20.1` | MLS2 |
+| 30 | HR | `10.10.30.0/24` | `10.10.30.1` | MLS1 |
+| 40 | CUSTOMER-SERVICES | `10.10.40.0/24` | `10.10.40.1` | MLS2 |
+| 50 | IT | `10.10.50.0/24` | `10.10.50.1` | MLS1 |
+| 60 | ACCOUNTING | `10.10.60.0/24` | `10.10.60.1` | MLS2 |
+| 70 | BANK-OPERATIONS | `10.10.70.0/24` | `10.10.70.1` | MLS1 |
+| 80 | ADMIN | `10.10.80.0/24` | `10.10.80.1` | MLS2 |
 
-### Traffic Isolation
+### Right block · Banking services and infrastructure
 
-```mermaid
-flowchart TD
-    STAFF["STAFF VLAN 30"]
-    ADMIN["IT-ADMIN VLAN 40"]
-    ATM["ATM VLAN 70"]
-    GUEST["GUEST VLAN 60"]
+| VLAN | Name | Subnet | Virtual gateway | HSRP Active |
+|---:|---|---|---|---|
+| 100 | LOANS | `10.10.100.0/24` | `10.10.100.1` | MLS3 |
+| 110 | BACKUP | `10.10.110.0/24` | `10.10.110.1` | MLS4 |
+| 120 | SECURITY | `10.10.120.0/24` | `10.10.120.1` | MLS3 |
+| 130 | ATM | `10.10.130.0/24` | `10.10.130.1` | MLS4 |
+| 140 | VOICE | `10.10.140.0/24` | `10.10.140.1` | MLS3 |
+| 150 | GUEST | `10.10.150.0/24` | `10.10.150.1` | MLS4 |
+| 160 | DMZ | `10.10.160.0/24` | `10.10.160.1` | MLS3 |
+| 170 | DNS-DHCP | `10.10.170.0/24` | `10.10.170.1` | MLS4 |
+| 199 | MGMT-RIGHT | `10.10.4.0/24` | `10.10.4.1` | MLS3 |
 
-    AD["AD / DNS / DHCP"]
-    CORE["CORE BANKING"]
-    MGMT["MANAGEMENT"]
-    INTERNET["INTERNET"]
+### Reserved VLANs
 
-    STAFF -->|"Authorized directory services"| AD
-    STAFF -->|"HTTPS 443"| CORE
+| VLAN | Name | Purpose |
+|---:|---|---|
+| 998 | NATIVE-UNUSED | Unused native VLAN on trunks |
+| 999 | BLACKHOLE | Unused access ports; ports are administratively shut down |
 
-    ADMIN -->|"Administrative access"| AD
-    ADMIN -->|"Full authorized access"| CORE
-    ADMIN -->|"Management"| MGMT
+### Addressing conventions
 
-    ATM -->|"TCP 8443 only"| CORE
-    GUEST -->|"Internet only"| INTERNET
+- HSRP virtual IP: `10.10.X.1`
+- MLS1 / MLS3 SVI address: `10.10.X.2`
+- MLS2 / MLS4 SVI address: `10.10.X.3`
+- DHCP clients start from `.20`.
+- Router loopbacks: `10.10.255.1`–`10.10.255.5`.
+- Multilayer-switch loopbacks: `10.10.255.11`–`10.10.255.14`.
+- Left access-switch management addresses: `10.10.10.241`–`10.10.10.248`.
+- Right access-switch management addresses: `10.10.4.241`–`10.10.4.248`.
 
-    ATM -.->|"DENIED"| AD
-    GUEST -.->|"DENIED"| CORE
-    STAFF -.->|"DENIED"| MGMT
-```
+## 04 · Routing & High Availability
 
-### Security Policy
+### Inter-VLAN routing
 
-| Source | Destination | Policy |
-|---|---|---|
-| Staff | AD / DNS | Authorized services |
-| Staff | Core Banking | HTTPS 443 |
-| IT Admin | Internal infrastructure | Administrative access |
-| ATM | ATM Server | TCP 8443 |
-| Guest | Internal networks | Deny |
-| Guest | Internet | Allow |
-| Internet | DMZ | HTTP/HTTPS to portal |
-| DMZ | Core Banking | HTTPS API only |
-| DMZ | Other internal zones | Deny |
+The four multilayer switches provide Layer 3 switching through SVIs. Each department VLAN uses an HSRP virtual IP as its default gateway.
 
----
+### HSRP
 
-## 06. PERIMETER SECURITY & DMZ
+- MLS1 and MLS2 provide gateway redundancy for the left block.
+- MLS3 and MLS4 provide gateway redundancy for the right block.
+- Active gateway roles are distributed between the two switches.
+- HSRP preemption and authentication are configured.
+- HSRP hello traffic must be permitted through interface ACLs.
 
-The perimeter is protected by a Cisco ASA 5506-X firewall.
+### Spanning Tree
 
-### Three Security Interfaces
+Rapid-PVST+ is used for Layer 2 loop prevention. STP root placement follows the HSRP active switch for each VLAN:
 
-| Interface | Security Level | Network |
-|---|---:|---|
-| outside | 0 | 203.0.113.0/29 |
-| inside | 100 | 10.255.0.0/30 |
-| dmz | 50 | 172.16.100.0/24 |
+- Priority `4096`: intended root bridge.
+- Priority `8192`: secondary bridge.
 
-### NAT Architecture
+This alignment keeps the preferred Layer 2 path consistent with the active Layer 3 gateway.
 
-**Dynamic PAT**
+### RIPv2
 
-Internal networks use the ASA outside interface address for outbound Internet connectivity.
+RIPv2 is used across the routed infrastructure.
 
-**Static NAT**
+- Version 2.
+- `no auto-summary`.
+- Passive interfaces on loopbacks and non-routing-facing interfaces.
+- Routed point-to-point links use `/30` subnets.
+- R5 originates the default route toward the internal routing domain.
 
-The online banking portal is mapped to a dedicated public address:
+### Routed link addressing
 
-| Host | Private IP | Public IP |
-|---|---|---|
-| DMZ-WEB | 172.16.100.10 | 203.0.113.3 |
-
-### DMZ Security Flow
-
-```mermaid
-flowchart LR
-    INTERNET["Internet"]
-    FW["ASA Firewall"]
-    WEB["DMZ Web Portal"]
-    APP["Core Banking API"]
-
-    INTERNET -->|"HTTPS 443"| FW
-    FW -->|"Static NAT"| WEB
-    WEB -->|"HTTPS 443 only"| APP
-
-    WEB -.->|"Blocked"| AD["Active Directory"]
-    WEB -.->|"Blocked"| STAFF["Staff VLAN"]
-    WEB -.->|"Blocked"| MGMT["Management"]
-```
-
-The public portal must never have unrestricted access to the internal banking infrastructure.
-
----
-
-## 07. LAYER 2 HARDENING
-
-Access switches implement additional controls to reduce common Layer 2 attacks.
-
-| Security Control | Implementation |
+| Connection | Subnet |
 |---|---|
-| Port Security | Sticky MAC, maximum MAC limit |
-| DHCP Snooping | Trusted uplinks and rate-limited access ports |
-| BPDU Guard | Protected endpoint-facing interfaces |
-| PortFast | Edge port acceleration |
-| Rapid-PVST+ | Rapid spanning-tree convergence |
-| Native VLAN | VLAN 99 |
-| Blackhole VLAN | VLAN 999 |
-| Unused Ports | Administratively shut down |
-| EtherChannel | LACP active mode |
+| R1–R2 | `10.10.1.4/30` |
+| R2–R3 | `10.10.1.8/30` |
+| R1–R4 | `10.10.1.12/30` |
+| R3–R4 | `10.10.1.16/30` |
+| R4–R5 | `10.10.1.20/30` |
+| R4–MLS2 | `10.10.1.24/30` |
+| R1–MLS1 | `10.10.1.28/30` |
+| R1–MLS2 | `10.10.1.44/30` |
+| R2–MLS3 | `10.10.1.32/30` |
+| R3–MLS4 | `10.10.1.36/30` |
+| R4–MLS1 | `10.10.1.40/30` |
+| R2–MLS4 | `10.10.1.52/30` |
+| R3–MLS3 | `10.10.1.48/30` |
+| R3–R5 | `10.10.1.56/30` |
+| R5–ISP | `203.0.113.0/30` |
 
-### EtherChannel Design
+## 05 · Network Services
 
-- Po1: HQ-CORE ↔ SW-SRV
-- Po2: HQ-CORE ↔ SW-HQ-ACC
+### DHCP
 
-Both use LACP with 802.1Q trunking.
+The DHCP server is placed in VLAN 170.
 
----
-
-## 08. CENTRALIZED WINDOWS INFRASTRUCTURE
-
-The Windows environment provides centralized identity, network services, and endpoint management.
-
-### Domain Controller: DC1
-
-| Service | Technology | Responsibility |
-|---|---|---|
-| Identity | AD DS | Centralized authentication |
-| Name Resolution | DNS | Internal domain resolution |
-| Address Management | DHCP | Dynamic IP assignment |
-| Endpoint Policy | GPO | Security enforcement |
-| File Services | SMB | Centralized file sharing |
-| Permissions | NTFS | Least-privilege access |
-
-**Domain:** `atlasbank.local`
-
-**Domain Controller IP:** `10.10.10.10/24`
-
-**Gateway:** `10.10.10.1`
-
-### Windows 10 Domain Client
-
-The Windows 10 Pro workstation connects to the HQ STAFF VLAN and is used to validate:
-
-- DHCP address allocation.
-- DNS resolution.
-- Active Directory domain joining.
-- Domain authentication.
-- Group Policy application.
-- File server access.
-- Banking application connectivity.
-- Network isolation.
-
-### Group Policy Security Baseline
-
-Planned policies include:
-
-- Password complexity and account lockout.
-- Automatic workstation inactivity locking.
-- Windows Defender Firewall enforcement.
-- USB storage restrictions.
-- Legal logon banner.
-- Security event auditing.
-- Restricted administrative access.
-
----
-
-## 09. IP ADDRESSING & INFRASTRUCTURE INVENTORY
-
-### Core Infrastructure
-
-| Device | Address |
+| Parameter | Value |
 |---|---|
-| DC1 | 10.10.10.10 |
-| SRV-CORE | 10.10.20.10 |
-| SRV-ATM | 10.10.20.20 |
-| SW-HQ-ACC | 10.10.50.11 |
-| SW-SRV | 10.10.50.12 |
-| BR1-SW | 10.20.50.2 |
-| BR2-SW | 10.30.50.2 |
-| DMZ-WEB | 172.16.100.10 |
+| Hostname | SRV-DHCP |
+| Address | `10.10.170.10/24` |
+| Default gateway | `10.10.170.1` |
+| DNS server | `10.10.170.11` |
 
-### Gateway Convention
-
-Each user and server VLAN uses `.1` as its default gateway.
-
-Infrastructure servers use static addressing.
-
-Staff and ATM endpoints use centralized Windows DHCP, while the HQ guest network uses a local DHCP pool on HQ-CORE.
-
----
-
-## 10. IMPLEMENTATION ROADMAP
-
-The project is divided into controlled implementation phases to ensure that each layer can be tested before introducing additional complexity.
-
-```mermaid
-flowchart TD
-    A["PHASE 01<br/>Physical Topology & Cabling"]
-    B["PHASE 02<br/>Device Baseline & Hardening"]
-    C["PHASE 03<br/>VLANs & Layer 2 Security"]
-    D["PHASE 04<br/>Inter-VLAN Routing & OSPF"]
-    E["PHASE 05<br/>ASA Firewall & DMZ"]
-    F["PHASE 06<br/>ACLs & Traffic Isolation"]
-    G["PHASE 07<br/>DHCP Relay & Validation"]
-    H["PHASE 08<br/>Windows Server Integration"]
-    I["PHASE 09<br/>AD DS, DNS, DHCP & GPO"]
-    J["PHASE 10<br/>End-to-End Security Testing"]
-
-    A --> B --> C --> D --> E --> F --> G --> H --> I --> J
-
-    classDef phase fill:#102A43,stroke:#D4A94D,color:#FFFFFF
-    class A,B,C,D,E,F,G,H,I,J phase
-```
-
-### Phase 01 — Network Foundation
-
-- [ ] Build the complete Packet Tracer topology.
-- [ ] Configure all physical and logical connections.
-- [ ] Apply device hostnames and baseline security.
-- [ ] Create VLANs and trunk links.
-- [ ] Configure LACP EtherChannels.
-- [ ] Enable Rapid-PVST+ and Layer 2 protections.
-
-### Phase 02 — Routing & Segmentation
-
-- [ ] Configure Layer 3 SVIs.
-- [ ] Configure routed core uplinks.
-- [ ] Configure branch router-on-a-stick.
-- [ ] Implement OSPF multi-area.
-- [ ] Enable MD5 authentication.
-- [ ] Configure extended ACLs.
-- [ ] Validate inter-VLAN restrictions.
-
-### Phase 03 — Perimeter Defense
-
-- [ ] Configure ASA security interfaces.
-- [ ] Configure PAT for internal networks.
-- [ ] Configure static NAT for the DMZ portal.
-- [ ] Apply outside and DMZ ACLs.
-- [ ] Validate Internet access.
-- [ ] Verify DMZ isolation.
-
-### Phase 04 — Windows Integration
-
-- [ ] Connect VMware Windows Server 2019.
-- [ ] Configure the server network interface.
-- [ ] Install AD DS and DNS.
-- [ ] Configure DHCP scopes.
-- [ ] Create the `atlasbank.local` domain.
-- [ ] Join Windows 10 Pro to the domain.
-- [ ] Deploy security GPOs.
-- [ ] Configure SMB and NTFS permissions.
-
-### Phase 05 — Security Validation
-
-- [ ] Test routing adjacencies.
-- [ ] Verify DHCP and DNS.
-- [ ] Test domain authentication.
-- [ ] Validate firewall behavior.
-- [ ] Test allowed and denied ACL traffic.
-- [ ] Verify management-plane restrictions.
-- [ ] Document evidence and results.
-
----
-
-## 11. NETWORK VALIDATION
-
-A secure network is not complete until its security controls have been tested.
-
-### Cisco Verification Commands
-
-**Routing**
+DHCP pools are configured for the user and service VLANs, with client allocation starting at `.20`. The multilayer-switch SVIs relay DHCP requests using:
 
 ```cisco
-show ip ospf neighbor
-show ip route ospf
-show ip protocols
+ip helper-address 10.10.170.10
 ```
 
-**Switching**
+VLAN 170 and VLAN 199 use static addressing and do not have DHCP pools.
+
+### DNS
+
+| Parameter | Value |
+|---|---|
+| Hostname | SRV-DNS |
+| Address | `10.10.170.11/24` |
+| Default gateway | `10.10.170.1` |
+| Domain | `oxabank.local` |
+
+DNS records include:
+
+- `dns.oxabank.local` → `10.10.170.11`
+- `dhcp.oxabank.local` → `10.10.170.10`
+- `www.oxabank.local` → `10.10.160.10`
+- `r1`–`r5.oxabank.local` → router loopbacks
+- `mls1`–`mls4.oxabank.local` → multilayer-switch loopbacks
+- `isp.oxabank.local` → `203.0.113.2`
+
+The `www` record reserves an address for a web server in the DMZ; deploy that server separately if web-service testing is required.
+
+## 06 · Security Architecture
+
+### Access-layer hardening
+
+- Port Security with sticky MAC learning.
+- Maximum of two secure MAC addresses per endpoint port.
+- Violation mode: `restrict`.
+- PortFast and BPDU Guard on endpoint ports.
+- Unused ports assigned to VLAN 999 and shut down.
+- VLAN 1 SVI administratively disabled.
+- Native VLAN 998 on trunk links.
+- DTP negotiation disabled with `switchport nonegotiate`.
+- VTP configured in transparent mode.
+
+### Management plane
+
+- SSH version 2 configured.
+- Telnet transport disabled on VTY lines.
+- `SSH-ONLY` standard ACL restricts management source networks.
+- Session timeouts and MOTD banners configured.
+
+**Configuration caveat:** The supplied configuration explicitly does not create local usernames or passwords and uses `no login` on VTY lines. Therefore, SSH transport and source filtering are configured, but authenticated administrative access is not complete. Add local credentials and an appropriate VTY login method before considering management access secured.
+
+### Inter-VLAN ACL policy
+
+| ACL | Security objective |
+|---|---|
+| `GUEST-IN` | Prevent Guest clients from reaching internal bank subnets; allow intended external traffic |
+| `DMZ-IN` | Prevent DMZ hosts from initiating connections into internal networks |
+| `ATM-IN` | Limit ATM traffic to approved server and Bank Operations networks |
+| `BACKUP-OUT` | Restrict access to the Backup VLAN to approved sources |
+| `OUTSIDE-IN` | Filter inbound traffic on the ISP-facing interface |
+| `SSH-ONLY` | Restrict device management access to approved source networks |
+
+The ACLs include a permit for HSRP hello packets (`UDP/1985` to `224.0.0.2`) so gateway redundancy messages are not inadvertently blocked.
+
+### NAT/PAT and ISP edge
+
+R5 is the perimeter router:
+
+- Outside interface: `203.0.113.1/30`.
+- ISP interface: `203.0.113.2/30`.
+- Default route points to the ISP.
+- NAT overload translates internal private addresses to the outside interface address.
+- `OUTSIDE-IN` filters inbound traffic.
+- ISP loopback `8.8.8.8/32` is used as a simulated external ping target.
+
+## 07 · DMZ & Server Zone
+
+The DMZ is isolated in VLAN 160:
+
+| Parameter | Value |
+|---|---|
+| VLAN | 160 |
+| Subnet | `10.10.160.0/24` |
+| Default gateway | `10.10.160.1` |
+| Reserved web-server address | `10.10.160.10` |
+
+The DNS and DHCP servers are kept in VLAN 170, separate from the DMZ. The DMZ ACL is designed to prevent new sessions from the DMZ toward internal banking networks while permitting the explicitly configured return traffic.
+
+## 08 · Implementation Sequence
+
+Follow the deployment sequence defined in the configuration notes:
+
+1. ISP router.
+2. Edge router R5.
+3. Internal routers R1–R4.
+4. Multilayer switches MLS1–MLS4.
+5. The 16 access switches.
+6. DHCP and DNS server services.
+7. End devices and DHCP clients.
+8. Connectivity, security and redundancy validation.
+
+**Packet Tracer cabling notes**
+
+- R5 connects to ISP using Gigabit Ethernet (`R5 G0/0` ↔ `ISP G0/0`).
+- The DCE ends of serial links must be on the interfaces where `clock rate` is configured.
+- Optional LACP requires two additional physical links between MLS1–MLS2 and two between MLS3–MLS4. The LACP configuration is commented out until those links are added.
+
+## 09 · Verification & Testing
+
+### Layer 2
 
 ```cisco
-show etherchannel summary
 show vlan brief
 show interfaces trunk
-show spanning-tree
+show spanning-tree summary
+show spanning-tree vlan 20
+show port-security interface fa0/1
+show etherchannel summary
 ```
 
-**Security**
+### Layer 3 and redundancy
 
 ```cisco
-show ip access-lists
-show ip dhcp snooping
-show ip dhcp snooping binding
-show port-security
-show port-security address
+show ip interface brief
+show ip route
+show ip protocols
+show ip rip database
+show standby brief
 ```
 
-**ASA**
+### ACL and NAT
 
 ```cisco
-show interface ip brief
-show route
-show nat
-show access-list
-show xlate
+show access-lists
+show ip nat translations
+show ip nat statistics
 ```
 
-### Windows Validation
-
-```powershell
-ipconfig /all
-nslookup atlasbank.local
-nltest /dsgetdc:atlasbank.local
-gpresult /r
-gpupdate /force
-whoami /all
-```
-
-### Security Test Matrix
-
-| Test | Expected Result |
-|---|---|
-| Staff → Banking HTTPS | ALLOW |
-| Staff → Management VLAN | DENY |
-| ATM → ATM Server TCP 8443 | ALLOW |
-| ATM → Active Directory | DENY |
-| Guest → Internet | ALLOW |
-| Guest → Internal Servers | DENY |
-| Internet → Public Portal HTTPS | ALLOW |
-| Internet → Internal Infrastructure | DENY |
-| DMZ → Core Banking HTTPS | ALLOW |
-| DMZ → Other Internal Zones | DENY |
-| Unauthorized SSH | DENY |
-
----
-
-## 12. REPOSITORY STRUCTURE
-
-Suggested documentation and configuration organization:
+### Client tests
 
 ```text
-ATLAS-BANK/
-│
-├── README.md
-│
-├── topology/
-│   ├── AtlasBank.pkt
-│   ├── topology.png
-│   └── addressing-plan.md
-│
-├── configurations/
-│   ├── routers/
-│   │   ├── ISP-R.cfg
-│   │   ├── HQ-WAN-R.cfg
-│   │   ├── BR1-R.cfg
-│   │   └── BR2-R.cfg
-│   │
-│   ├── switches/
-│   │   ├── HQ-CORE.cfg
-│   │   ├── SW-SRV.cfg
-│   │   ├── SW-HQ-ACC.cfg
-│   │   ├── BR1-SW.cfg
-│   │   └── BR2-SW.cfg
-│   │
-│   └── firewall/
-│       └── HQ-FW.cfg
-│
-├── windows-server/
-│   ├── active-directory/
-│   ├── dns/
-│   ├── dhcp/
-│   ├── group-policy/
-│   └── file-services/
-│
-├── security/
-│   ├── acl-matrix.md
-│   ├── firewall-policy.md
-│   ├── layer2-hardening.md
-│   └── security-validation.md
-│
-├── documentation/
-│   ├── architecture.md
-│   ├── vlan-plan.md
-│   ├── routing-design.md
-│   └── test-results.md
-│
-└── screenshots/
-    ├── topology/
-    ├── routing/
-    ├── firewall/
-    ├── windows-server/
-    └── validation/
+ipconfig /renew
+ipconfig /all
+ping 10.10.X.1
+ping 10.10.170.10
+ping 8.8.8.8
+ping dns.oxabank.local
+nslookup www.oxabank.local
 ```
 
----
+Replace `X` with the VLAN ID under test.
 
-## 13. FUTURE EXPANSION — PHASE 02
+### Expected security-policy checks
 
-The infrastructure is designed to support additional enterprise security and availability features.
-
-Planned enhancements:
-
-- Dual WAN connectivity.
-- HSRP gateway redundancy.
-- Firewall high availability.
-- Enhanced network monitoring.
-- Centralized Syslog and SNMP.
-- Network intrusion detection.
-- SIEM integration.
-- Automated configuration backups.
-- Advanced Windows security auditing.
-- Infrastructure monitoring dashboards.
-
-These enhancements are separate from the initial implementation and will be documented when deployed and validated.
-
----
-
-## 14. PROJECT OBJECTIVES
-
-This project demonstrates practical knowledge of:
-
-- Enterprise network architecture.
-- Cisco switching and routing.
-- Multi-area OSPF.
-- Network segmentation and ACLs.
-- Firewall and DMZ architecture.
-- Layer 2 security.
-- Windows Server administration.
-- Active Directory and Group Policy.
-- Network troubleshooting.
-- Security testing and technical documentation.
-
----
-
-## 15. PROJECT STATUS
-
-| Deliverable | Status |
+| Test | Expected behavior |
 |---|---|
-| Architecture design | Defined |
-| IP addressing plan | Defined |
-| VLAN and security zones | Defined |
-| Packet Tracer topology | Implementation |
-| Cisco configurations | Implementation |
-| Firewall and DMZ | Implementation |
-| Windows Server integration | Planned |
-| Security validation | Pending |
+| Guest → Finance / internal bank subnets | Blocked |
+| Guest → simulated Internet | Allowed when routing and NAT are operational |
+| DMZ → internal network (new connection) | Blocked |
+| ATM → DNS/DHCP server VLAN | Allowed |
+| ATM → Bank Operations VLAN | Allowed |
+| ATM → Finance VLAN | Blocked |
+| IT / Admin → Backup VLAN | Allowed |
+| Finance → Backup VLAN | Blocked |
 
-**Project:** Atlas Bank — Secure Financial Network Infrastructure
+### High-availability checks
 
-**Environment:** Cisco Packet Tracer + VMware
+- Confirm one Active and one Standby router per HSRP group.
+- Verify the expected Active switch for each VLAN.
+- Test gateway failover by shutting down the active switch or its relevant SVI/uplink.
+- Confirm that the standby switch takes over the virtual gateway.
+- Check routing convergence after a routed-link failure.
 
-**Focus:** Enterprise Networking / Network Security / Windows Server Administration
+Expected results depend on correct cabling, interface status, VLAN propagation, routing convergence and server configuration.
+
+## 10 · Troubleshooting Guide
+
+| Symptom | What to inspect |
+|---|---|
+| Client gets `169.254.x.x` | DHCP pool, helper address, VLAN assignment, DHCP ACL permits |
+| Both HSRP peers show Active | HSRP hello ACL permit, group settings, VLAN trunk allowance |
+| No inter-block connectivity | RIPv2 neighbors, routed `/30` addressing, interface status |
+| No Internet simulation | R5 default route, NAT inside/outside, PAT rule, ISP link |
+| Port becomes err-disabled | Port Security / BPDU Guard event and interface logs |
+| Trunk is not forwarding expected VLAN | Native VLAN, allowed VLAN list, trunk mode, cabling |
+| EtherChannel does not form | Optional physical links and matching LACP/trunk configuration |
+| SSH access is unsuccessful | RSA keys, VTY ACL, credentials and login configuration |
+
+## 11 · Technologies
+
+| Area | Technologies |
+|---|---|
+| Switching | VLANs, 802.1Q, VTP Transparent |
+| Layer 2 resilience | Rapid-PVST+, PortFast, BPDU Guard |
+| Link aggregation | LACP (optional; requires additional cabling) |
+| Layer 3 | SVIs, inter-VLAN routing, `/30` routed links |
+| Gateway redundancy | HSRP |
+| Dynamic routing | RIPv2 |
+| Network services | DHCP, DHCP Relay, DNS |
+| Security | Standard ACLs, Extended ACLs, Port Security, SSH |
+| Perimeter | NAT Overload / PAT, outside ACL |
+| Simulation | Cisco Packet Tracer 9.0.1 |
+
+## 12 · Repository Structure
+
+```text
+OXA-BANK/
+├── README.md
+├── OXABANK.pkt
+├── docs/
+│   ├── topology.png
+│   ├── vlan-ip-plan.md
+│   └── testing-checklist.md
+├── configs/
+│   ├── routers/
+│   │   ├── ISP.txt
+│   │   ├── R1.txt
+│   │   ├── R2.txt
+│   │   ├── R3.txt
+│   │   ├── R4.txt
+│   │   └── R5.txt
+│   ├── multilayer-switches/
+│   │   ├── MLS1.txt
+│   │   ├── MLS2.txt
+│   │   ├── MLS3.txt
+│   │   └── MLS4.txt
+│   └── access-switches/
+│       └── access-switch-configs.txt
+└── screenshots/
+    ├── topology-overview.png
+    ├── hsrp-status.png
+    ├── routing-table.png
+    └── connectivity-tests.png
+```
+
+Adjust filenames to match the files actually committed to the repository.
+
+## 13 · Skills Demonstrated
+
+- Enterprise network segmentation and hierarchical design.
+- Redundant Layer 3 gateway implementation.
+- Dynamic routing and routed-core design.
+- DHCP relay and centralized DNS.
+- ACL-based traffic control for sensitive network zones.
+- NAT/PAT and edge-router configuration.
+- Layer 2 hardening and management-plane controls.
+- Network validation, troubleshooting and failover testing.
 
 ---
 
-<p align="center">
-  <strong>ATLAS BANK</strong>
-  <br/>
-  <sub>SECURE CONNECTIVITY. CONTROLLED ACCESS. TRUSTED INFRASTRUCTURE.</sub>
-  <br/><br/>
-  <img src="https://img.shields.io/badge/NETWORK-SECURITY-087F5B?style=flat-square" />
-  <img src="https://img.shields.io/badge/ENTERPRISE-ARCHITECTURE-17324D?style=flat-square" />
-  <img src="https://img.shields.io/badge/CISCO-INFRASTRUCTURE-D4A94D?style=flat-square" />
-</p>
+<div align="center">
+
+**OXA BANK · Enterprise Banking Network Infrastructure**
+
+*Designed and simulated with Cisco Packet Tracer 9.0.1*
+
+</div>
