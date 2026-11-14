@@ -1,0 +1,40 @@
+# OXA BANK — Validation Checklist
+
+## Layer 2
+- [ ] `show vlan brief`
+- [ ] `show interfaces trunk`
+- [ ] `show spanning-tree summary`
+- [ ] `show spanning-tree vlan <vlan-id>`
+- [ ] `show port-security interface <interface>`
+
+## Layer 3 / HSRP / RIPv2
+- [ ] `show ip interface brief`
+- [ ] `show ip route`
+- [ ] `show ip protocols`
+- [ ] `show ip rip database`
+- [ ] `show standby brief`
+
+## Services / Edge
+- [ ] Client receives DHCP address from expected VLAN pool
+- [ ] Client resolves `dns.oxabank.local`
+- [ ] Client reaches its HSRP gateway
+- [ ] Client reaches DNS/DHCP server as permitted
+- [ ] NAT/PAT translations appear on R5
+- [ ] Simulated external target `8.8.8.8` responds
+
+## Security
+- [ ] Guest cannot reach internal bank subnets
+- [ ] ATM access is limited to approved networks
+- [ ] DMZ cannot initiate new connections to internal networks
+- [ ] Finance cannot reach Backup
+- [ ] Approved IT/Admin sources can reach Backup
+
+## Redundancy
+- [ ] One Active and one Standby peer per HSRP group
+- [ ] HSRP failover succeeds
+- [ ] Routing reconverges after a routed-link failure
+
+## Configuration caveats to resolve
+- [ ] Configure local credentials and authenticated VTY login before relying on SSH
+- [ ] Add the optional physical links before enabling LACP EtherChannel
+- [ ] Deploy a DMZ web server at `10.10.160.10` if testing the `www` DNS record
