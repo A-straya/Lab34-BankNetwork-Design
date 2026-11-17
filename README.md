@@ -35,11 +35,6 @@ The topology represents four office floors split into two distribution blocks. E
 > **Project scope:** Educational Packet Tracer simulation. This is not a certified or production-ready banking architecture.
 
 ## 02 · Network Topology
-
-The diagram below summarizes the logical design and the main connections defined in the device configurations.
-
-![OXA BANK logical network topology](docs/topology.png)
-
 ### Topology at a glance
 
 | Segment | Devices | Responsibility |
