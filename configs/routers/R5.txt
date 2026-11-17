@@ -1,0 +1,77 @@
+hostname R5
+no ip domain-lookup
+ip domain-name oxabank.local
+banner motd #*** OXA BANK - ACCES RESERVE AU PERSONNEL AUTORISE - ACTIVITE SURVEILLEE ***#
+!
+ip access-list standard SSH-ONLY
+ permit 10.10.10.0 0.0.0.255
+ permit 10.10.4.0 0.0.0.255
+ permit 10.10.50.0 0.0.0.255
+ permit 10.10.1.0 0.0.0.255
+ permit 10.10.255.0 0.0.0.255
+ deny any
+!
+crypto key generate rsa modulus 1024
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3
+!
+line console 0
+ logging synchronous
+ exec-timeout 10 0
+line vty 0 4
+ transport input ssh
+ no login
+ access-class SSH-ONLY in
+ exec-timeout 5 0
+ logging synchronous
+!
+interface loopback0
+ description MANAGEMENT R5
+ ip address 10.10.255.5 255.255.255.255
+!
+interface g0/0
+ description LIEN vers ISP (203.0.113.0/30)  [OUTSIDE]
+ ip address 203.0.113.1 255.255.255.252
+ ip nat outside
+ ip access-group OUTSIDE-IN in
+ no shutdown
+interface g0/1
+ description LIEN vers R3 g0/0 (10.10.1.56/30)  [INSIDE]
+ ip address 10.10.1.58 255.255.255.252
+ ip nat inside
+ no shutdown
+interface g0/2
+ description LIEN vers R4 g0/0 (10.10.1.20/30)  [INSIDE]
+ ip address 10.10.1.22 255.255.255.252
+ ip nat inside
+ no shutdown
+!
+ip route 0.0.0.0 0.0.0.0 203.0.113.2
+!
+ip access-list standard NAT-INSIDE
+ permit 10.10.0.0 0.0.255.255
+ip nat inside source list NAT-INSIDE interface g0/0 overload
+!
+! Trafic entrant depuis Internet : uniquement les retours de sessions internes
+ip access-list extended OUTSIDE-IN
+ permit icmp host 203.0.113.2 host 203.0.113.1
+ permit icmp any any echo-reply
+ permit icmp any any unreachable
+ permit icmp any any time-exceeded
+ permit udp any eq 53 any
+ permit tcp any any established
+ deny ip any any
+!
+router rip
+ version 2
+ no auto-summary
+ network 10.0.0.0
+ passive-interface loopback0
+ passive-interface g0/0
+ default-information originate
+!
+end
+copy running-config startup-config
+
+
