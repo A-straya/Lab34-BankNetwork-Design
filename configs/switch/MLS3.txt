@@ -1,0 +1,265 @@
+hostname MLS3
+no ip domain-lookup
+ip domain-name oxabank.local
+banner motd #*** OXA BANK - ACCES RESERVE AU PERSONNEL AUTORISE - ACTIVITE SURVEILLEE ***#
+!
+ip access-list standard SSH-ONLY
+ permit 10.10.10.0 0.0.0.255
+ permit 10.10.4.0 0.0.0.255
+ permit 10.10.50.0 0.0.0.255
+ permit 10.10.1.0 0.0.0.255
+ permit 10.10.255.0 0.0.0.255
+ deny any
+!
+crypto key generate rsa modulus 1024
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3
+!
+line console 0
+ logging synchronous
+ exec-timeout 10 0
+line vty 0 15
+ transport input ssh
+ no login
+ access-class SSH-ONLY in
+ exec-timeout 5 0
+ logging synchronous
+!
+ip routing
+vtp mode transparent
+spanning-tree mode rapid-pvst
+spanning-tree portfast bpduguard default
+spanning-tree extend system-id
+errdisable recovery cause bpduguard
+errdisable recovery interval 300
+!
+vlan 100
+ name LOANS
+vlan 110
+ name BACKUP
+vlan 120
+ name SECURITY
+vlan 130
+ name ATM
+vlan 140
+ name VOICE
+vlan 150
+ name GUEST
+vlan 160
+ name DMZ
+vlan 170
+ name DNS-DHCP
+vlan 199
+ name MGMT-RIGHT
+vlan 998
+ name NATIVE-UNUSED
+vlan 999
+ name BLACKHOLE
+!
+ip access-list extended GUEST-IN
+ remark HSRP-hello-INDISPENSABLE
+ permit udp any host 224.0.0.2 eq 1985
+ remark DHCP
+ permit ip host 0.0.0.0 host 255.255.255.255
+ permit udp any eq 68 any eq 67
+ permit udp any any eq 67
+ permit udp 10.10.150.0 0.0.0.255 host 10.10.170.11 eq 53
+ permit ip 10.10.150.0 0.0.0.255 10.10.150.0 0.0.0.255
+ deny ip any 10.10.0.0 0.0.255.255
+ permit ip any any
+ip access-list extended DMZ-IN
+ remark HSRP-hello-INDISPENSABLE
+ permit udp any host 224.0.0.2 eq 1985
+ remark DHCP
+ permit ip host 0.0.0.0 host 255.255.255.255
+ permit udp any eq 68 any eq 67
+ permit udp any any eq 67
+ permit udp 10.10.160.0 0.0.0.255 host 10.10.170.11 eq 53
+ permit ip 10.10.160.0 0.0.0.255 10.10.160.0 0.0.0.255
+ permit tcp 10.10.160.0 0.0.0.255 10.10.0.0 0.0.255.255 established
+ permit icmp 10.10.160.0 0.0.0.255 10.10.0.0 0.0.255.255 echo-reply
+ deny ip 10.10.160.0 0.0.0.255 10.10.0.0 0.0.255.255
+ permit ip any any
+ip access-list extended ATM-IN
+ remark HSRP-hello-INDISPENSABLE
+ permit udp any host 224.0.0.2 eq 1985
+ remark DHCP
+ permit ip host 0.0.0.0 host 255.255.255.255
+ permit udp any eq 68 any eq 67
+ permit udp any any eq 67
+ permit ip 10.10.130.0 0.0.0.255 10.10.130.0 0.0.0.255
+ permit ip 10.10.130.0 0.0.0.255 10.10.170.0 0.0.0.255
+ permit ip 10.10.130.0 0.0.0.255 10.10.70.0 0.0.0.255
+ deny ip any any
+ip access-list extended BACKUP-OUT
+ permit udp any host 224.0.0.2 eq 1985
+ permit ip 10.10.110.0 0.0.0.255 any
+ permit ip 10.10.170.0 0.0.0.255 any
+ permit ip 10.10.50.0 0.0.0.255 any
+ permit ip 10.10.80.0 0.0.0.255 any
+ permit ip 10.10.1.0 0.0.0.255 any
+ permit ip 10.10.255.0 0.0.0.255 any
+ deny ip any any
+!
+spanning-tree vlan 100 priority 4096
+spanning-tree vlan 110 priority 8192
+spanning-tree vlan 120 priority 4096
+spanning-tree vlan 130 priority 8192
+spanning-tree vlan 140 priority 4096
+spanning-tree vlan 150 priority 8192
+spanning-tree vlan 160 priority 4096
+spanning-tree vlan 170 priority 8192
+spanning-tree vlan 199 priority 4096
+!
+interface loopback0
+ description MANAGEMENT MLS3
+ ip address 10.10.255.13 255.255.255.255
+!
+interface g1/0/1
+ description LIEN ROUTE vers R2 g0/1 (10.10.1.32/30)
+ no switchport
+ ip address 10.10.1.34 255.255.255.252
+ no shutdown
+!
+interface g1/0/2
+ description LIEN ROUTE vers R3 g0/2 (10.10.1.48/30)
+ no switchport
+ ip address 10.10.1.50 255.255.255.252
+ no shutdown
+!
+! --- OPTIONNEL : LACP (necessite 2 cables entre MLS3 et MLS4 sur g1/0/11-12) - decommenter si cables ---
+!interface range g1/0/11-12
+! description LACP vers MLS4 g1/0/11-12
+! switchport mode trunk
+! switchport trunk native vlan 998
+! switchport trunk allowed vlan 100,110,120,130,140,150,160,170,199
+! channel-group 1 mode active
+! no shutdown
+!interface port-channel 1
+! description ETHERCHANNEL LACP vers MLS4
+! switchport mode trunk
+! switchport trunk native vlan 998
+! switchport trunk allowed vlan 100,110,120,130,140,150,160,170,199
+!
+interface range g1/0/3-10
+ description TRUNK vers switchs d'acces (g0/1)
+ switchport mode trunk
+ switchport trunk native vlan 998
+ switchport trunk allowed vlan 100,110,120,130,140,150,160,170,199
+ switchport nonegotiate
+ no shutdown
+!
+interface range g1/0/13-24
+ description INUTILISE
+ switchport mode access
+ switchport access vlan 999
+ shutdown
+!
+interface vlan 100
+ description GW LOANS
+ ip address 10.10.100.2 255.255.255.0
+ ip helper-address 10.10.170.10
+ standby 100 ip 10.10.100.1
+ standby 100 priority 110
+ standby 100 preempt
+ standby 100 authentication OxaBank
+ no shutdown
+!
+interface vlan 110
+ description GW BACKUP
+ ip address 10.10.110.2 255.255.255.0
+ ip helper-address 10.10.170.10
+ ip access-group BACKUP-OUT out
+ standby 110 ip 10.10.110.1
+ standby 110 priority 100
+ standby 110 preempt
+ standby 110 authentication OxaBank
+ no shutdown
+!
+interface vlan 120
+ description GW SECURITY
+ ip address 10.10.120.2 255.255.255.0
+ ip helper-address 10.10.170.10
+ standby 120 ip 10.10.120.1
+ standby 120 priority 110
+ standby 120 preempt
+ standby 120 authentication OxaBank
+ no shutdown
+!
+interface vlan 130
+ description GW ATM
+ ip address 10.10.130.2 255.255.255.0
+ ip helper-address 10.10.170.10
+ ip access-group ATM-IN in
+ standby 130 ip 10.10.130.1
+ standby 130 priority 100
+ standby 130 preempt
+ standby 130 authentication OxaBank
+ no shutdown
+!
+interface vlan 140
+ description GW VOICE
+ ip address 10.10.140.2 255.255.255.0
+ ip helper-address 10.10.170.10
+ standby 140 ip 10.10.140.1
+ standby 140 priority 110
+ standby 140 preempt
+ standby 140 authentication OxaBank
+ no shutdown
+!
+interface vlan 150
+ description GW GUEST
+ ip address 10.10.150.2 255.255.255.0
+ ip helper-address 10.10.170.10
+ ip access-group GUEST-IN in
+ standby 150 ip 10.10.150.1
+ standby 150 priority 100
+ standby 150 preempt
+ standby 150 authentication OxaBank
+ no shutdown
+!
+interface vlan 160
+ description GW DMZ
+ ip address 10.10.160.2 255.255.255.0
+ ip helper-address 10.10.170.10
+ ip access-group DMZ-IN in
+ standby 160 ip 10.10.160.1
+ standby 160 priority 110
+ standby 160 preempt
+ standby 160 authentication OxaBank
+ no shutdown
+!
+interface vlan 170
+ description GW DNS-DHCP
+ ip address 10.10.170.2 255.255.255.0
+ standby 170 ip 10.10.170.1
+ standby 170 priority 100
+ standby 170 preempt
+ standby 170 authentication OxaBank
+ no shutdown
+!
+interface vlan 199
+ description GW MGMT-RIGHT
+ ip address 10.10.4.2 255.255.255.0
+ standby 199 ip 10.10.4.1
+ standby 199 priority 110
+ standby 199 preempt
+ standby 199 authentication OxaBank
+ no shutdown
+!
+interface vlan 1
+ shutdown
+!
+router rip
+ version 2
+ no auto-summary
+ network 10.0.0.0
+ passive-interface default
+ no passive-interface g1/0/1
+ no passive-interface g1/0/2
+!
+end
+copy running-config startup-config
+
+
