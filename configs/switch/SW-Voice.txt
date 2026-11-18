@@ -1,0 +1,88 @@
+hostname SW-VOICE
+no ip domain-lookup
+ip domain-name oxabank.local
+banner motd #*** OXA BANK - ACCES RESERVE AU PERSONNEL AUTORISE - ACTIVITE SURVEILLEE ***#
+!
+ip access-list standard SSH-ONLY
+ permit 10.10.10.0 0.0.0.255
+ permit 10.10.4.0 0.0.0.255
+ permit 10.10.50.0 0.0.0.255
+ permit 10.10.1.0 0.0.0.255
+ permit 10.10.255.0 0.0.0.255
+ deny any
+!
+crypto key generate rsa modulus 1024
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3
+!
+line console 0
+ logging synchronous
+ exec-timeout 10 0
+line vty 0 15
+ transport input ssh
+ no login
+ access-class SSH-ONLY in
+ exec-timeout 5 0
+ logging synchronous
+!
+vtp mode transparent
+spanning-tree mode rapid-pvst
+spanning-tree portfast bpduguard default
+errdisable recovery cause bpduguard
+errdisable recovery cause psecure-violation
+errdisable recovery interval 300
+!
+vlan 140
+ name VOICE
+vlan 199
+ name MGMT-RIGHT
+vlan 998
+ name NATIVE-UNUSED
+vlan 999
+ name BLACKHOLE
+!
+interface g0/1
+ description TRUNK vers MLS3 (MLS3/MLS4 g1/0/3-10)
+ switchport mode trunk
+ switchport trunk native vlan 998
+ switchport trunk allowed vlan 140,199
+ switchport nonegotiate
+ no shutdown
+!
+interface g0/2
+ description TRUNK vers MLS4 (MLS3/MLS4 g1/0/3-10)
+ switchport mode trunk
+ switchport trunk native vlan 998
+ switchport trunk allowed vlan 140,199
+ switchport nonegotiate
+ no shutdown
+!
+interface range f0/1-20
+ description PORTS UTILISATEURS VLAN 140 VOICE
+ switchport mode access
+ switchport access vlan 140
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security mac-address sticky
+ switchport port-security violation restrict
+ no shutdown
+interface range f0/21-24
+ description INUTILISE
+ switchport mode access
+ switchport access vlan 999
+ shutdown
+interface vlan 1
+ shutdown
+interface vlan 199
+ description MANAGEMENT SW-VOICE
+ ip address 10.10.4.245 255.255.255.0
+ no shutdown
+ip default-gateway 10.10.4.1
+!
+end
+copy running-config startup-config
+
+
