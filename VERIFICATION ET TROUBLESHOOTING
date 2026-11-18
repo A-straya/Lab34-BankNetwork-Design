@@ -1,0 +1,24 @@
+COUCHE 1/2
+  show ip interface brief            -> toutes les interfaces up/up (routeurs, MLS)
+  show interfaces trunk              -> trunks g0/1 et g0/2 des acces, Po1 entre MLS
+  show etherchannel summary          -> Po1(SU) avec g1/0/5(P) g1/0/6(P)  [LACP]
+  show vlan brief                    -> VLAN du bloc presents partout ou necessaire
+  show spanning-tree vlan 20         -> root = MLS2 ; 1 seul port g0/x en BLK sur l'acces
+  show spanning-tree summary         -> mode rapid-pvst, PortFast/BPDU guard actifs
+  show port-security interface f0/1
+ COUCHE 3
+  show standby brief                 -> exactement UN Active et UN Standby par VLAN
+  show ip route / show ip rip database  -> reseaux 10.10.X.0/24 de l'autre cote + 0.0.0.0/0 (R) via R5
+  show ip protocols                  -> RIPv2, no auto-summary, voisins listes
+  show ip nat translations / statistics (R5)
+ SERVICES
+  PC : ipconfig /renew               -> IP 10.10.X.20+, GW 10.10.X.1, DNS 10.10.170.11
+  PC : ping 10.10.X.1 -> ping 10.10.170.10 -> ping 8.8.8.8 -> ping dns.oxabank.local / nslookup www.oxabank.local
+  PC : ssh -l admin 10.10.255.1  (autorise depuis VLAN 10 / 50 seulement ; necessite un username/mot de passe,
+       absent de cette config -> a ajouter si vous voulez tester SSH)
+ TESTS DE SECURITE
+  GUEST : ping 10.10.20.20 doit ECHOUER ; ping 8.8.8.8 doit REUSSIR
+  DMZ -> LAN : echec ; LAN -> DMZ : reussite
+  ATM : ping 10.10.170.10 OK ; ping 10.10.20.20 ECHEC
+  BACKUP : ping depuis IT (VLAN50) OK ; depuis FINANCE (VLAN20) ECHEC
+  Test redondance : shutdown g1/0/1 de MLS1 -> le ping continue ; shutdown MLS2 -> VLAN pairs basculent sur MLS1.
