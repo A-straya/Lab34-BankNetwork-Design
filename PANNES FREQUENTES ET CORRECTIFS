@@ -1,0 +1,15 @@
+  Port f0/x err-disabled (psecure/bpduguard)  -> shutdown puis no shutdown ; "clear port-security sticky"
+                                                  si l'on change de PC.
+  Deux MLS "Active" sur le meme VLAN           -> hello HSRP bloque (ACL sans la ligne 224.0.0.2) ou VLAN
+                                                  non autorise sur le trunk/Po1 ; verifier allowed vlan.
+  PC en 169.254.x.x                            -> ip helper-address manquant, SRV-DHCP sans pool du VLAN,
+                                                  ou ACL de la VLAN bloquant udp 67/68.
+  Pas de route vers l'autre cote               -> RIP : voisin passif (no passive-interface sur g1/0/1-2),
+                                                  mauvaise IP /30, serie sans clock rate / cable non DCE.
+  Pas d'Internet                               -> R5 'ip route 0.0.0.0', 'default-information originate',
+                                                  ip nat inside/outside inverses, ISP lie sur g0/0.
+  SSH refuse                                   -> crypto key generate non fait, IP source absente de SSH-ONLY,
+                                                  'transport input ssh' present ; SSH exige un username (non configure ici).
+  Trunk ne monte pas                           -> native VLAN different (998 partout), mode trunk des 2 cotes,
+                                                  ports du cable bien g0/1->MLS impair et g0/2->MLS pair.
+  Port-channel en (SD)/(I)                     -> memes allowed vlan/native des 2 cotes et cables 5-6 branches.
